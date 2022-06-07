@@ -31,26 +31,38 @@ route_map = 'FooBar123'
 base_path = ['protocols', 'rip']
 
 class TestProtocolsRIP(VyOSUnitTestSHIM.TestCase):
-    def setUp(self):
-        self.cli_set(['policy', 'access-list', acl_in, 'rule', '10', 'action', 'permit'])
-        self.cli_set(['policy', 'access-list', acl_in, 'rule', '10', 'source', 'any'])
-        self.cli_set(['policy', 'access-list', acl_in, 'rule', '10', 'destination', 'any'])
-        self.cli_set(['policy', 'access-list', acl_out, 'rule', '20', 'action', 'deny'])
-        self.cli_set(['policy', 'access-list', acl_out, 'rule', '20', 'source', 'any'])
-        self.cli_set(['policy', 'access-list', acl_out, 'rule', '20', 'destination', 'any'])
-        self.cli_set(['policy', 'prefix-list', prefix_list_in, 'rule', '100', 'action', 'permit'])
-        self.cli_set(['policy', 'prefix-list', prefix_list_in, 'rule', '100', 'prefix', '192.0.2.0/24'])
-        self.cli_set(['policy', 'prefix-list', prefix_list_out, 'rule', '200', 'action', 'deny'])
-        self.cli_set(['policy', 'prefix-list', prefix_list_out, 'rule', '200', 'prefix', '192.0.2.0/24'])
-        self.cli_set(['policy', 'route-map', route_map, 'rule', '10', 'action', 'permit'])
+    @classmethod
+    def setUpClass(cls):
+        super(TestProtocolsRIP, cls).setUpClass()
+
+        # ensure we can also run this test on a live system - so lets clean
+        # out the current configuration :)
+        cls.cli_delete(cls, base_path)
+
+        cls.cli_set(cls, ['policy', 'access-list', acl_in, 'rule', '10', 'action', 'permit'])
+        cls.cli_set(cls, ['policy', 'access-list', acl_in, 'rule', '10', 'source', 'any'])
+        cls.cli_set(cls, ['policy', 'access-list', acl_in, 'rule', '10', 'destination', 'any'])
+        cls.cli_set(cls, ['policy', 'access-list', acl_out, 'rule', '20', 'action', 'deny'])
+        cls.cli_set(cls, ['policy', 'access-list', acl_out, 'rule', '20', 'source', 'any'])
+        cls.cli_set(cls, ['policy', 'access-list', acl_out, 'rule', '20', 'destination', 'any'])
+        cls.cli_set(cls, ['policy', 'prefix-list', prefix_list_in, 'rule', '100', 'action', 'permit'])
+        cls.cli_set(cls, ['policy', 'prefix-list', prefix_list_in, 'rule', '100', 'prefix', '192.0.2.0/24'])
+        cls.cli_set(cls, ['policy', 'prefix-list', prefix_list_out, 'rule', '200', 'action', 'deny'])
+        cls.cli_set(cls, ['policy', 'prefix-list', prefix_list_out, 'rule', '200', 'prefix', '192.0.2.0/24'])
+        cls.cli_set(cls, ['policy', 'route-map', route_map, 'rule', '10', 'action', 'permit'])
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.cli_delete(cls, ['policy', 'access-list', acl_in])
+        cls.cli_delete(cls, ['policy', 'access-list', acl_out])
+        cls.cli_delete(cls, ['policy', 'prefix-list', prefix_list_in])
+        cls.cli_delete(cls, ['policy', 'prefix-list', prefix_list_out])
+        cls.cli_delete(cls, ['policy', 'route-map', route_map])
+
+        super(TestProtocolsRIP, cls).tearDownClass()
 
     def tearDown(self):
         self.cli_delete(base_path)
-        self.cli_delete(['policy', 'access-list', acl_in])
-        self.cli_delete(['policy', 'access-list', acl_out])
-        self.cli_delete(['policy', 'prefix-list', prefix_list_in])
-        self.cli_delete(['policy', 'prefix-list', prefix_list_out])
-        self.cli_delete(['policy', 'route-map', route_map])
         self.cli_commit()
 
         # Check for running process
@@ -145,6 +157,26 @@ class TestProtocolsRIP(VyOSUnitTestSHIM.TestCase):
         # Verify FRR configuration
         frrconfig = self.getFRRconfig(zebra_route_map)
         self.assertNotIn(zebra_route_map, frrconfig)
+
+    def test_rip_03_version(self):
+        rx_version = '1'
+        tx_version = '2'
+        interface = 'eth0'
+
+        self.cli_set(base_path + ['version', tx_version])
+        self.cli_set(base_path + ['interface', interface, 'send', 'version', tx_version])
+        self.cli_set(base_path + ['interface', interface, 'receive', 'version', rx_version])
+
+        # commit changes
+        self.cli_commit()
+
+        # Verify FRR configuration
+        frrconfig = self.getFRRconfig('router rip')
+        self.assertIn(f'version {tx_version}', frrconfig)
+
+        frrconfig = self.getFRRconfig(f'interface {interface}')
+        self.assertIn(f' ip rip receive version {rx_version}', frrconfig)
+        self.assertIn(f' ip rip send version {tx_version}', frrconfig)
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

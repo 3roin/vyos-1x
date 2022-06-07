@@ -28,6 +28,22 @@
         <children>
           #include <include/interface/description.xml.i>
           #include <include/interface/disable.xml.i>
+          <node name="ip">
+            <properties>
+              <help>IPv4 routing parameters</help>
+            </properties>
+            <children>
+              #include <include/interface/disable-forwarding.xml.i>
+            </children>
+          </node>
+          <node name="ipv6">
+            <properties>
+              <help>IPv6 routing parameters</help>
+            </properties>
+            <children>
+              #include <include/interface/disable-forwarding.xml.i>
+            </children>
+          </node>
           <node name="protocols">
             <properties>
               <help>Routing protocol parameters</help>
@@ -40,6 +56,15 @@
                 </properties>
                 <children>
                   #include <include/bgp/protocol-common-config.xml.i>
+                </children>
+              </node>
+              <node name="eigrp" owner="${vyos_conf_scripts_dir}/protocols_eigrp.py $VAR(../../@)">
+                <properties>
+                  <help>Enhanced Interior Gateway Routing Protocol (EIGRP)</help>
+                  <priority>821</priority>
+                </properties>
+                <children>
+                  #include <include/eigrp/protocol-common-config.xml.i>
                 </children>
               </node>
               <node name="isis" owner="${vyos_conf_scripts_dir}/protocols_isis.py $VAR(../../@)">
@@ -71,7 +96,7 @@
               </node>
               <node name="static" owner="${vyos_conf_scripts_dir}/protocols_static.py $VAR(../../@)">
                 <properties>
-                  <help>Static route parameters</help>
+                  <help>Static Routing</help>
                   <priority>481</priority>
                 </properties>
                 <children>

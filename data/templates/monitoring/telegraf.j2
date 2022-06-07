@@ -14,15 +14,35 @@
   logfile = ""
   hostname = ""
   omit_hostname = false
+{% if azure_data_explorer is vyos_defined %}
+### Azure Data Explorer ###
+[[outputs.azure_data_explorer]]
+  ## The URI property of the Azure Data Explorer resource on Azure
+  endpoint_url = "{{ azure_data_explorer.url }}"
+
+  ## The Azure Data Explorer database that the metrics will be ingested into.
+  ## The plugin will NOT generate this database automatically, it's expected that this database already exists before ingestion.
+  database = "{{ azure_data_explorer.database }}"
+  metrics_grouping_type = "{{ azure_data_explorer.group_metrics }}"
+
+  ## Name of the single table to store all the metrics (Only needed if metrics_grouping_type is "SingleTable").
+{%     if azure_data_explorer.table is vyos_defined and azure_data_explorer.group_metrics == 'SingleTable' %}
+  table_name = "{{ azure_data_explorer.table }}"
+{%     endif %}
+### End Azure Data Explorer ###
+{% endif %}
 {% if influxdb_configured is vyos_defined %}
+### InfluxDB2 ###
 [[outputs.influxdb_v2]]
   urls = ["{{ url }}:{{ port }}"]
   insecure_skip_verify = true
   token = "$INFLUX_TOKEN"
   organization = "{{ authentication.organization }}"
   bucket = "{{ bucket }}"
+### End InfluxDB2 ###
 {% endif %}
 {% if prometheus_client is vyos_defined %}
+### Prometheus ###
 [[outputs.prometheus_client]]
   ## Address to listen on
   listen = "{{ prometheus_client.listen_address if prometheus_client.listen_address is vyos_defined else '' }}:{{ prometheus_client.port }}"
@@ -35,6 +55,30 @@
 {%     if prometheus_client.allow_from is vyos_defined %}
   ip_range = {{ prometheus_client.allow_from }}
 {%     endif %}
+### End Prometheus ###
+{% endif %}
+{% if splunk is vyos_defined %}
+### Splunk ###
+[[outputs.http]]
+  ## URL is the address to send metrics to
+  url = "{{ splunk.url }}"
+  ## Timeout for HTTP message
+  # timeout = "5s"
+  ## Use TLS but skip chain & host verification
+{%     if splunk.authentication.insecure is vyos_defined %}
+  insecure_skip_verify = true
+{%     endif %}
+  ## Data format to output
+  data_format = "splunkmetric"
+  ## Provides time, index, source overrides for the HEC
+  splunkmetric_hec_routing = true
+  ## Additional HTTP headers
+   [outputs.http.headers]
+   # Should be set manually to "application/json" for json data_format
+     Content-Type = "application/json"
+     Authorization = "Splunk {{ splunk.authentication.token }}"
+     X-Splunk-Request-Channel = "{{ splunk.authentication.token }}"
+### End Splunk ###
 {% endif %}
 [[inputs.cpu]]
     percpu = true

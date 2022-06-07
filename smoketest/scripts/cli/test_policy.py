@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright (C) 2021 VyOS maintainers and contributors
+# Copyright (C) 2021-2022 VyOS maintainers and contributors
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 or later as
@@ -711,12 +711,19 @@ class TestPolicy(VyOSUnitTestSHIM.TestCase):
 
         large_community_list = 'bgp-large-community-123456'
         prefix_list = 'foo-pfx-list'
-        ipv6_nexthop = 'fe80::1'
+        ipv6_nexthop_address = 'fe80::1'
         local_pref = '300'
         metric = '50'
         peer = '2.3.4.5'
         tag = '6542'
         goto = '25'
+
+        ipv4_nexthop_address= '192.0.2.2'
+        ipv4_prefix_len= '18'
+        ipv6_prefix_len= '122'
+        ipv4_nexthop_type= 'blackhole'
+        ipv6_nexthop_type= 'blackhole'
+        
 
         test_data = {
             'foo-map-bar' : {
@@ -785,12 +792,35 @@ class TestPolicy(VyOSUnitTestSHIM.TestCase):
                     '30' : {
                         'action' : 'permit',
                         'match' : {
-                            'ipv6-nexthop' : ipv6_nexthop,
+                            'ipv6-nexthop-address' : ipv6_nexthop_address,
+                            'ipv6-nexthop-access-list' : access_list,
+                            'ipv6-nexthop-prefix-list' : prefix_list,
+                            'ipv6-nexthop-type' : ipv6_nexthop_type,
+                            'ipv6-address-pfx-len' : ipv6_prefix_len,
                             'large-community' : large_community_list,
                             'local-pref' : local_pref,
                             'metric': metric,
                             'origin-egp': '',
                             'peer' : peer,
+                        },
+                    },
+                    '40' : {
+                        'action' : 'permit',
+                        'match' : {
+                            'ip-nexthop-addr' : ipv4_nexthop_address,
+                            'ip-address-pfx-len' : ipv4_prefix_len,
+                        },
+                    },
+                    '42' : {
+                        'action' : 'deny',
+                        'match' : {
+                            'ip-nexthop-plen' : ipv4_prefix_len,
+                        },
+                    },
+                    '44' : {
+                        'action' : 'permit',
+                        'match' : {
+                            'ip-nexthop-type' : ipv4_nexthop_type,
                         },
                     },
                 },
@@ -800,27 +830,28 @@ class TestPolicy(VyOSUnitTestSHIM.TestCase):
                     '10' : {
                         'action' : 'deny',
                         'set' : {
-                            'aggregator-as'       : '1234567890',
-                            'aggregator-ip'       : '10.255.255.0',
-                            'as-path-exclude'     : '1234',
-                            'as-path-prepend'     : '1234567890 987654321',
-                            'atomic-aggregate'    : '',
-                            'distance'            : '110',
-                            'extcommunity-bw'     : '20000',
-                            'extcommunity-rt'     : '123:456',
-                            'extcommunity-soo'    : '456:789',
-                            'ipv6-next-hop-global': '2001::1',
-                            'ipv6-next-hop-local' : 'fe80::1',
-                            'ip-next-hop'         : '192.168.1.1',
-                            'large-community'     : '100:200:300',
-                            'local-preference'    : '500',
-                            'metric'              : '150',
-                            'metric-type'         : 'type-1',
-                            'origin'              : 'incomplete',
-                            'originator-id'       : '172.16.10.1',
-                            'src'                 : '100.0.0.1',
-                            'tag'                 : '65530',
-                            'weight'              : '2',
+                            'aggregator-as'           : '1234567890',
+                            'aggregator-ip'           : '10.255.255.0',
+                            'as-path-exclude'         : '1234',
+                            'as-path-prepend'         : '1234567890 987654321',
+                            'as-path-prepend-last-as' : '5',
+                            'atomic-aggregate'        : '',
+                            'distance'                : '110',
+                            'extcommunity-bw'         : '20000',
+                            'extcommunity-rt'         : '123:456',
+                            'extcommunity-soo'        : '456:789',
+                            'ipv6-next-hop-global'    : '2001::1',
+                            'ipv6-next-hop-local'     : 'fe80::1',
+                            'ip-next-hop'             : '192.168.1.1',
+                            'large-community'         : '100:200:300',
+                            'local-preference'        : '500',
+                            'metric'                  : '150',
+                            'metric-type'             : 'type-1',
+                            'origin'                  : 'incomplete',
+                            'originator-id'           : '172.16.10.1',
+                            'src'                     : '100.0.0.1',
+                            'tag'                     : '65530',
+                            'weight'                  : '2',
                         },
                     },
                 },
@@ -846,6 +877,13 @@ class TestPolicy(VyOSUnitTestSHIM.TestCase):
                             'evpn-rd'             : '100:300',
                             'evpn-route-type'     : 'prefix',
                             'evpn-vni'            : '1234',
+                        },
+                    },
+                    '20' : {
+                        'action' : 'permit',
+                        'set' : {
+                            'evpn-gateway-ipv4'   : '192.0.2.99',
+                            'evpn-gateway-ipv6'   : '2001:db8:f00::1',
                         },
                     },
                 },
@@ -909,10 +947,18 @@ class TestPolicy(VyOSUnitTestSHIM.TestCase):
                         self.cli_set(path + ['rule', rule, 'match', 'ip', 'address', 'access-list', rule_config['match']['ip-address-acl']])
                     if 'ip-address-pfx' in rule_config['match']:
                         self.cli_set(path + ['rule', rule, 'match', 'ip', 'address', 'prefix-list', rule_config['match']['ip-address-pfx']])
+                    if 'ip-address-pfx-len' in rule_config['match']:
+                        self.cli_set(path + ['rule', rule, 'match', 'ip', 'address', 'prefix-len', rule_config['match']['ip-address-pfx-len']])
                     if 'ip-nexthop-acl' in rule_config['match']:
                         self.cli_set(path + ['rule', rule, 'match', 'ip', 'nexthop', 'access-list', rule_config['match']['ip-nexthop-acl']])
                     if 'ip-nexthop-pfx' in rule_config['match']:
                         self.cli_set(path + ['rule', rule, 'match', 'ip', 'nexthop', 'prefix-list', rule_config['match']['ip-nexthop-pfx']])
+                    if 'ip-nexthop-addr' in rule_config['match']:
+                        self.cli_set(path + ['rule', rule, 'match', 'ip', 'nexthop', 'address', rule_config['match']['ip-nexthop-addr']])
+                    if 'ip-nexthop-plen' in rule_config['match']:
+                        self.cli_set(path + ['rule', rule, 'match', 'ip', 'nexthop', 'prefix-len', rule_config['match']['ip-nexthop-plen']])
+                    if 'ip-nexthop-type' in rule_config['match']:
+                        self.cli_set(path + ['rule', rule, 'match', 'ip', 'nexthop', 'type', rule_config['match']['ip-nexthop-type']])
                     if 'ip-route-source-acl' in rule_config['match']:
                         self.cli_set(path + ['rule', rule, 'match', 'ip', 'route-source', 'access-list', rule_config['match']['ip-route-source-acl']])
                     if 'ip-route-source-pfx' in rule_config['match']:
@@ -921,8 +967,16 @@ class TestPolicy(VyOSUnitTestSHIM.TestCase):
                         self.cli_set(path + ['rule', rule, 'match', 'ipv6', 'address', 'access-list', rule_config['match']['ipv6-address-acl']])
                     if 'ipv6-address-pfx' in rule_config['match']:
                         self.cli_set(path + ['rule', rule, 'match', 'ipv6', 'address', 'prefix-list', rule_config['match']['ipv6-address-pfx']])
-                    if 'ipv6-nexthop' in rule_config['match']:
-                        self.cli_set(path + ['rule', rule, 'match', 'ipv6', 'nexthop', rule_config['match']['ipv6-nexthop']])
+                    if 'ipv6-address-pfx-len' in rule_config['match']:
+                        self.cli_set(path + ['rule', rule, 'match', 'ipv6', 'address', 'prefix-len', rule_config['match']['ipv6-address-pfx-len']])
+                    if 'ipv6-nexthop-address' in rule_config['match']:
+                        self.cli_set(path + ['rule', rule, 'match', 'ipv6', 'nexthop', 'address', rule_config['match']['ipv6-nexthop-address']])
+                    if 'ipv6-nexthop-access-list' in rule_config['match']:
+                        self.cli_set(path + ['rule', rule, 'match', 'ipv6', 'nexthop', 'access-list', rule_config['match']['ipv6-nexthop-access-list']])
+                    if 'ipv6-nexthop-prefix-list' in rule_config['match']:
+                        self.cli_set(path + ['rule', rule, 'match', 'ipv6', 'nexthop', 'prefix-list', rule_config['match']['ipv6-nexthop-prefix-list']])
+                    if 'ipv6-nexthop-type' in rule_config['match']:
+                        self.cli_set(path + ['rule', rule, 'match', 'ipv6', 'nexthop', 'type', rule_config['match']['ipv6-nexthop-type']])
                     if 'large-community' in rule_config['match']:
                         self.cli_set(path + ['rule', rule, 'match', 'large-community', 'large-community-list', rule_config['match']['large-community']])
                     if 'local-pref' in rule_config['match']:
@@ -958,9 +1012,9 @@ class TestPolicy(VyOSUnitTestSHIM.TestCase):
                     if 'aggregator-ip' in rule_config['set']:
                         self.cli_set(path + ['rule', rule, 'set', 'aggregator', 'ip', rule_config['set']['aggregator-ip']])
                     if 'as-path-exclude' in rule_config['set']:
-                        self.cli_set(path + ['rule', rule, 'set', 'as-path-exclude', rule_config['set']['as-path-exclude']])
+                        self.cli_set(path + ['rule', rule, 'set', 'as-path', 'exclude', rule_config['set']['as-path-exclude']])
                     if 'as-path-prepend' in rule_config['set']:
-                        self.cli_set(path + ['rule', rule, 'set', 'as-path-prepend', rule_config['set']['as-path-prepend']])
+                        self.cli_set(path + ['rule', rule, 'set', 'as-path', 'prepend', rule_config['set']['as-path-prepend']])
                     if 'atomic-aggregate' in rule_config['set']:
                         self.cli_set(path + ['rule', rule, 'set', 'atomic-aggregate'])
                     if 'distance' in rule_config['set']:
@@ -995,6 +1049,10 @@ class TestPolicy(VyOSUnitTestSHIM.TestCase):
                         self.cli_set(path + ['rule', rule, 'set', 'tag', rule_config['set']['tag']])
                     if 'weight' in rule_config['set']:
                         self.cli_set(path + ['rule', rule, 'set', 'weight', rule_config['set']['weight']])
+                    if 'evpn-gateway-ipv4' in rule_config['set']:
+                        self.cli_set(path + ['rule', rule, 'set', 'evpn', 'gateway', 'ipv4', rule_config['set']['evpn-gateway-ipv4']])
+                    if 'evpn-gateway-ipv6' in rule_config['set']:
+                        self.cli_set(path + ['rule', rule, 'set', 'evpn', 'gateway', 'ipv6', rule_config['set']['evpn-gateway-ipv6']])
 
         self.cli_commit()
 
@@ -1045,11 +1103,23 @@ class TestPolicy(VyOSUnitTestSHIM.TestCase):
                     if 'ip-address-pfx' in rule_config['match']:
                         tmp = f'match ip address prefix-list {rule_config["match"]["ip-address-pfx"]}'
                         self.assertIn(tmp, config)
+                    if 'ip-address-pfx-len' in rule_config['match']:
+                        tmp = f'match ip address prefix-len {rule_config["match"]["ip-address-pfx-len"]}'
+                        self.assertIn(tmp, config)
                     if 'ip-nexthop-acl' in rule_config['match']:
                         tmp = f'match ip next-hop {rule_config["match"]["ip-nexthop-acl"]}'
                         self.assertIn(tmp, config)
                     if 'ip-nexthop-pfx' in rule_config['match']:
                         tmp = f'match ip next-hop prefix-list {rule_config["match"]["ip-nexthop-pfx"]}'
+                        self.assertIn(tmp, config)
+                    if 'ip-nexthop-addr' in rule_config['match']:
+                        tmp = f'match ip next-hop address {rule_config["match"]["ip-nexthop-addr"]}'
+                        self.assertIn(tmp, config)
+                    if 'ip-nexthop-plen' in rule_config['match']:
+                        tmp = f'match ip next-hop prefix-len {rule_config["match"]["ip-nexthop-plen"]}'
+                        self.assertIn(tmp, config)
+                    if 'ip-nexthop-type' in rule_config['match']:
+                        tmp = f'match ip next-hop type {rule_config["match"]["ip-nexthop-type"]}'
                         self.assertIn(tmp, config)
                     if 'ip-route-source-acl' in rule_config['match']:
                         tmp = f'match ip route-source {rule_config["match"]["ip-route-source-acl"]}'
@@ -1063,8 +1133,20 @@ class TestPolicy(VyOSUnitTestSHIM.TestCase):
                     if 'ipv6-address-pfx' in rule_config['match']:
                         tmp = f'match ipv6 address prefix-list {rule_config["match"]["ipv6-address-pfx"]}'
                         self.assertIn(tmp, config)
-                    if 'ipv6-nexthop' in rule_config['match']:
-                        tmp = f'match ipv6 next-hop address {rule_config["match"]["ipv6-nexthop"]}'
+                    if 'ipv6-address-pfx-len' in rule_config['match']:
+                        tmp = f'match ipv6 address prefix-len {rule_config["match"]["ipv6-address-pfx-len"]}'
+                        self.assertIn(tmp, config)
+                    if 'ipv6-nexthop-address' in rule_config['match']:
+                        tmp = f'match ipv6 next-hop address {rule_config["match"]["ipv6-nexthop-address"]}'
+                        self.assertIn(tmp, config)
+                    if 'ipv6-nexthop-access-list' in rule_config['match']:
+                        tmp = f'match ipv6 next-hop {rule_config["match"]["ipv6-nexthop-access-list"]}'
+                        self.assertIn(tmp, config)
+                    if 'ipv6-nexthop-prefix-list' in rule_config['match']:
+                        tmp = f'match ipv6 next-hop prefix-list {rule_config["match"]["ipv6-nexthop-prefix-list"]}'
+                        self.assertIn(tmp, config)
+                    if 'ipv6-nexthop-type' in rule_config['match']:
+                        tmp = f'match ipv6 next-hop type {rule_config["match"]["ipv6-nexthop-type"]}'
                         self.assertIn(tmp, config)
                     if 'large-community' in rule_config['match']:
                         tmp = f'match large-community {rule_config["match"]["large-community"]}'
@@ -1118,6 +1200,8 @@ class TestPolicy(VyOSUnitTestSHIM.TestCase):
                         tmp += 'as-path exclude ' + rule_config['set']['as-path-exclude']
                     elif 'as-path-prepend' in rule_config['set']:
                         tmp += 'as-path prepend ' + rule_config['set']['as-path-prepend']
+                    elif 'as-path-prepend-last-as' in rule_config['set']:
+                        tmp += 'as-path prepend last-as' + rule_config['set']['as-path-prepend-last-as']
                     elif 'atomic-aggregate' in rule_config['set']:
                         tmp += 'atomic-aggregate'
                     elif 'distance' in rule_config['set']:
@@ -1152,6 +1236,10 @@ class TestPolicy(VyOSUnitTestSHIM.TestCase):
                         tmp += 'tag ' + rule_config['set']['tag']
                     elif 'weight' in rule_config['set']:
                         tmp += 'weight ' + rule_config['set']['weight']
+                    elif 'vpn-gateway-ipv4' in rule_config['set']:
+                        tmp += 'evpn gateway ipv4 ' + rule_config['set']['vpn-gateway-ipv4']
+                    elif 'vpn-gateway-ipv6' in rule_config['set']:
+                        tmp += 'evpn gateway ipv6 ' + rule_config['set']['vpn-gateway-ipv6']
 
                     self.assertIn(tmp, config)
 

@@ -185,11 +185,23 @@ route-map {{ route_map }} {{ rule_config.action }} {{ rule }}
 {%                     if rule_config.match.ip.address.prefix_list is vyos_defined %}
  match ip address prefix-list {{ rule_config.match.ip.address.prefix_list }}
 {%                     endif %}
+{%                     if rule_config.match.ip.address.prefix_len is vyos_defined %}
+ match ip address prefix-len {{ rule_config.match.ip.address.prefix_len }}
+{%                     endif %}
 {%                     if rule_config.match.ip.nexthop.access_list is vyos_defined %}
  match ip next-hop {{ rule_config.match.ip.nexthop.access_list }}
 {%                     endif %}
+{%                     if rule_config.match.ip.nexthop.address is vyos_defined %}
+ match ip next-hop address {{ rule_config.match.ip.nexthop.address }}
+{%                     endif %}
+{%                     if rule_config.match.ip.nexthop.prefix_len is vyos_defined %}
+ match ip next-hop prefix-len {{ rule_config.match.ip.nexthop.prefix_len }}
+{%                     endif %}
 {%                     if rule_config.match.ip.nexthop.prefix_list is vyos_defined %}
  match ip next-hop prefix-list {{ rule_config.match.ip.nexthop.prefix_list }}
+{%                     endif %}
+{%                     if rule_config.match.ip.nexthop.type is vyos_defined %}
+ match ip next-hop type {{ rule_config.match.ip.nexthop.type }}
 {%                     endif %}
 {%                     if rule_config.match.ip.route_source.access_list is vyos_defined %}
  match ip route-source {{ rule_config.match.ip.route_source.access_list }}
@@ -203,8 +215,20 @@ route-map {{ route_map }} {{ rule_config.action }} {{ rule }}
 {%                     if rule_config.match.ipv6.address.prefix_list is vyos_defined %}
  match ipv6 address prefix-list {{ rule_config.match.ipv6.address.prefix_list }}
 {%                     endif %}
-{%                     if rule_config.match.ipv6.nexthop is vyos_defined %}
- match ipv6 next-hop address {{ rule_config.match.ipv6.nexthop }}
+{%                     if rule_config.match.ipv6.address.prefix_len is vyos_defined %}
+ match ipv6 address prefix-len {{ rule_config.match.ipv6.address.prefix_len }}
+{%                     endif %}
+{%                     if rule_config.match.ipv6.nexthop.address is vyos_defined %}
+ match ipv6 next-hop address {{ rule_config.match.ipv6.nexthop.address }}
+{%                     endif %}
+{%                     if rule_config.match.ipv6.nexthop.access_list is vyos_defined %}
+ match ipv6 next-hop {{ rule_config.match.ipv6.nexthop.access_list }}
+{%                     endif %}
+{%                     if rule_config.match.ipv6.nexthop.prefix_list is vyos_defined %}
+ match ipv6 next-hop prefix-list {{ rule_config.match.ipv6.nexthop.prefix_list }}
+{%                     endif %}
+{%                     if rule_config.match.ipv6.nexthop.type is vyos_defined %}
+ match ipv6 next-hop type {{ rule_config.match.ipv6.nexthop.type }}
 {%                     endif %}
 {%                     if rule_config.match.large_community.large_community_list is vyos_defined %}
  match large-community {{ rule_config.match.large_community.large_community_list }}
@@ -238,11 +262,14 @@ route-map {{ route_map }} {{ rule_config.action }} {{ rule }}
 {%                     if rule_config.set.aggregator.as is vyos_defined and rule_config.set.aggregator.ip is vyos_defined %}
  set aggregator as {{ rule_config.set.aggregator.as }} {{ rule_config.set.aggregator.ip }}
 {%                     endif %}
-{%                     if rule_config.set.as_path_exclude is vyos_defined %}
- set as-path exclude {{ rule_config.set.as_path_exclude }}
+{%                     if rule_config.set.as_path.exclude is vyos_defined %}
+ set as-path exclude {{ rule_config.set.as_path.exclude }}
 {%                     endif %}
-{%                     if rule_config.set.as_path_prepend is vyos_defined %}
- set as-path prepend {{ rule_config.set.as_path_prepend }}
+{%                     if rule_config.set.as_path.prepend is vyos_defined %}
+ set as-path prepend {{ rule_config.set.as_path.prepend }}
+{%                     endif %}
+{%                     if rule_config.set.as_path.prepend_last_as is vyos_defined %}
+ set as-path prepend last-as {{ rule_config.set.as_path.prepend_last_as }}
 {%                     endif %}
 {%                     if rule_config.set.atomic_aggregate is vyos_defined %}
  set atomic-aggregate
@@ -255,6 +282,12 @@ route-map {{ route_map }} {{ rule_config.action }} {{ rule }}
 {%                     endif %}
 {%                     if rule_config.set.distance is vyos_defined %}
  set distance {{ rule_config.set.distance }}
+{%                     endif %}
+{%                     if rule_config.set.evpn.gateway.ipv4 is vyos_defined %}
+ set evpn gateway-ip ipv4 {{ rule_config.set.evpn.gateway.ipv4 }}
+{%                     endif %}
+{%                     if rule_config.set.evpn.gateway.ipv6 is vyos_defined %}
+ set evpn gateway-ip ipv6 {{ rule_config.set.evpn.gateway.ipv6 }}
 {%                     endif %}
 {%                     if rule_config.set.extcommunity.bandwidth is vyos_defined %}
  set extcommunity bandwidth {{ rule_config.set.extcommunity.bandwidth }}
