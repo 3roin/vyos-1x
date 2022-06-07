@@ -18,7 +18,7 @@ interface {{ name }} #{{ type }} {{ profile_name }}
     dynamic-map {{ map }} {{ map_conf.nbma_domain_name }}
 {%             endfor %}
 {%         endif %}
-{%         if tunnel_conf.cisco_authentication is vyos_defined %}
+{%         if tunnel_conf.cisco_authentication is vyos_defined and tunnel_conf.cisco_authentication is not none %}
     cisco-authentication {{ tunnel_conf.cisco_authentication }}
 {%         endif %}
 {%         if tunnel_conf.holding_time is vyos_defined %}
